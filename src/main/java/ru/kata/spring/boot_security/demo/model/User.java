@@ -45,8 +45,11 @@ public class User implements UserDetails {
     @NotBlank(message = "Укажите пароль!")
     private String password;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL,
-            mappedBy = "user")
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "user_role",
+               joinColumns = @JoinColumn(name = "user_id"),
+               inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
     public void addRoleToUser(Role role) {
@@ -54,7 +57,6 @@ public class User implements UserDetails {
             roles = new HashSet<>();
         }
         roles.add(role);
-        role.setUser(this);
     }
 
     @Override

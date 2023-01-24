@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.*;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.service.role.RoleService;
+import ru.kata.spring.boot_security.demo.service.role.RoleServiceImpl;
 import ru.kata.spring.boot_security.demo.service.user.UserService;
+import ru.kata.spring.boot_security.demo.service.user.UserServiceImpl;
 
 import java.util.List;
 
@@ -21,7 +23,7 @@ public class AdminController {
     private final RoleService roleService;
 
     @Autowired
-    public AdminController(UserService userService, RoleService roleService) {
+    public AdminController(UserServiceImpl userService, RoleServiceImpl roleService) {
         this.userService = userService;
         this.roleService = roleService;
     }
@@ -61,28 +63,22 @@ public class AdminController {
 
         if (user.getId() == 0) {
             if (boolRole) {
-                user.addRoleToUser(new Role("ROLE_ADMIN"));
+                Role role = roleService.findByRole("ADMIN");
+                role.addUserToRole(user);
             }
-
             userService.addUser(user);
-        } else {
 
+
+        } else {
             User userWithRole = userService.getUser(user.getId());
-            if(boolRole) {
-                for (Role role : userWithRole.getRoles()) {
-                    if (!role.getRole().equals("ROLE_ADMIN")) {
-                        user.addRoleToUser(new Role("ROLE_ADMIN"));
-                    }
-                }
+            Role role = roleService.findByRole("ADMIN");
+
+            if (boolRole && !userWithRole.getRoles().contains(role)) {
+                role.addUserToRole(user);
             } else {
-                for (Role role : userWithRole.getRoles()) {
-                    if (role.getRole().equals("ROLE_ADMIN")) {
-                        role.setUser(null);
-                        roleService.saveRole(role);
-                        roleService.deleteRole(role.getId());
-                    }
-                }
+                userWithRole.getRoles().remove(role);
             }
+            user.setRoles(userWithRole.getRoles());
 
             userService.updateUser(user);
         }
@@ -95,10 +91,8 @@ public class AdminController {
         boolean boolRole = false;
         User user = userService.getUser(id);
 
-        for (Role role : user.getRoles()) {
-            if (role.getRole().equals("ROLE_ADMIN")) {
+        if (user.getRoles().contains(roleService.findByRole("ADMIN"))) {
                 boolRole = true;
-            }
         }
         model.addAttribute("user", user);
         model.addAttribute("boolRole", boolRole);
